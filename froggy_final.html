@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>FROGGY: Galactic Leap - Ultimate</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Noto+Sans+SC:wght@700&family=Teko:wght@600&display=swap"
+        rel="stylesheet">
+    <style>
+        /* --- GENEL AYARLAR --- */
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            touch-action: none;
+            font-family: 'Press Start 2P', 'Noto Sans SC', cursive;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* --- UI KATMANI --- */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .hud-top {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            right: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            color: white;
+            text-shadow: 2px 2px 0px #000;
+        }
+
+        .stats-box {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .score-text {
+            font-size: 14px;
+            color: #fff;
+        }
+
+        .coin-text {
+            font-size: 12px;
+            color: gold;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* Stamina Barı */
+        #stamina-container {
+            width: 120px;
+            height: 14px;
+            background: #333;
+            border: 2px solid white;
+            position: relative;
+            margin-top: 5px;
+            box-shadow: 2px 2px 0px #000;
+        }
+
+        #stamina-bar {
+            width: 100%;
+            height: 100%;
+            background: #00FF00;
+            transition: width 0.1s;
+        }
+
+        #stamina-text {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            font-size: 8px;
+            line-height: 14px;
+            color: black;
+        }
+
+        /* Combo Göstergesi */
+        #combo-display {
+            position: absolute;
+            top: 80px;
+            left: 20px;
+            font-size: 20px;
+            color: #FFEB3B;
+            transform: rotate(-10deg);
+            opacity: 0;
+            transition: opacity 0.2s, transform 0.1s;
+            text-shadow: 3px 3px 0 #FF5722;
+            pointer-events: none;
+        }
+
+        /* Butonlar */
+        .icon-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid white;
+            color: white;
+            width: 40px;
+            height: 40px;
+            font-size: 16px;
+            cursor: pointer;
+            pointer-events: auto;
+            box-shadow: 2px 2px 0px #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .icon-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: none;
+        }
+
+        /* --- MENÜLER --- */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(5px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            pointer-events: auto;
+            z-index: 50;
+        }
+
+        h1 {
+            font-size: 35px;
+            margin-bottom: 10px;
+            color: #76ff03;
+            text-shadow: 4px 4px 0px #000;
+            text-align: center;
+            line-height: 1.5;
+            animation: floatTitle 2s infinite ease-in-out;
+        }
+
+        @keyframes floatTitle {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 260px;
+        }
+
+        button.main-btn {
+            padding: 15px;
+            font-size: 12px;
+            border: 2px solid white;
+            cursor: pointer;
+            color: white;
+            text-transform: uppercase;
+            font-family: 'Press Start 2P', 'Noto Sans SC', cursive;
+            box-shadow: 4px 4px 0px #000;
+            transition: transform 0.1s;
+        }
+
+        button.main-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px #000;
+        }
+
+        .btn-easy {
+            background: #2E7D32;
+        }
+
+        .btn-medium {
+            background: #EF6C00;
+        }
+
+        .btn-hard {
+            background: #c62828;
+        }
+
+        .btn-shop {
+            background: #9C27B0;
+        }
+
+        .btn-restart {
+            background: #1565C0;
+            margin-top: 20px;
+        }
+
+        /* Mağaza */
+        #shopMenu {
+            display: none;
+            overflow-y: auto;
+            padding-top: 50px;
+        }
+
+        .shop-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            max-height: 60vh;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .shop-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 280px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid white;
+            padding: 10px;
+            box-shadow: 4px 4px 0px #000;
+        }
+
+        .shop-preview {
+            width: 30px;
+            height: 30px;
+            border: 2px solid white;
+        }
+
+        #gameOver,
+        #pauseMenu {
+            display: none;
+        }
+
+        #controls-hint {
+            position: absolute;
+            bottom: 15px;
+            width: 100%;
+            text-align: center;
+            color: #aaa;
+            font-size: 10px;
+            pointer-events: none;
+            text-shadow: 1px 1px 0px black;
+            z-index: 15;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="ui-layer">
+        <div class="hud-top">
+            <div class="stats-box">
+                <div class="score-text"><span id="lbl_score">SKOR</span>: <span id="scoreDisplay">0</span></div>
+                <div class="coin-text">🪙 <span id="coinDisplay">0</span></div>
+                <div id="stamina-container">
+                    <div id="stamina-bar"></div>
+                    <div id="stamina-text">HAZIR</div>
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="icon-btn" id="btn_sound" onclick="window.toggleSound()">🔊</button>
+                <button class="icon-btn" id="btn_pause" onclick="window.togglePause()">⏸️</button>
+            </div>
+        </div>
+        <div id="combo-display">x2 KOMBO!</div>
+    </div>
+
+    <!-- ANA MENÜ -->
+    <div id="gameMenu" class="overlay">
+        <div style="position: absolute; top: 20px; right: 20px; display: flex; gap: 5px;">
+            <button class="icon-btn" onclick="window.setLanguage('tr')" title="Türkçe">🇹🇷</button>
+            <button class="icon-btn" onclick="window.setLanguage('en')" title="English">🇬🇧</button>
+            <button class="icon-btn" onclick="window.setLanguage('es')" title="Español">🇪🇸</button>
+            <button class="icon-btn" onclick="window.setLanguage('zh')" title="中文">🇨🇳</button>
+            <button class="icon-btn" onclick="window.setLanguage('hi')" title="हिन्दी">🇮🇳</button>
+        </div>
+
+        <h1>FROGGY<br><span style="font-size: 15px; color: #fff;">GALACTIC LEAP</span></h1>
+
+        <div class="btn-group">
+            <button id="btn_easy" class="main-btn btn-easy" onclick="window.startGame('easy')">KOLAY</button>
+            <button id="btn_medium" class="main-btn btn-medium" onclick="window.startGame('medium')">ORTA</button>
+            <button id="btn_hard" class="main-btn btn-hard" onclick="window.startGame('hard')">EKSTREM 🔥</button>
+            <button id="btn_shop" class="main-btn btn-shop" onclick="window.openShop()">MAĞAZA 🛒</button>
+        </div>
+    </div>
+
+    <!-- MAĞAZA -->
+    <div id="shopMenu" class="overlay">
+        <h1 id="shop_title">MAĞAZA</h1>
+        <p style="font-size: 12px; color: gold; margin-bottom: 20px;"><span id="shop_balance">BAKİYE</span>: <span
+                id="shopCoins">0</span></p>
+        <div class="shop-grid" id="shopList"></div>
+        <button id="btn_back" class="main-btn btn-restart" onclick="window.closeShop()">GERİ DÖN</button>
+    </div>
+
+    <!-- OYUN BİTTİ -->
+    <div id="gameOver" class="overlay">
+        <h1 id="game_over" style="color: #ff4444;">OYUN BİTTİ!</h1>
+        <p style="font-size: 12px; color: #aaa; margin-bottom: 20px;"><span id="deathReason">...</span></p>
+        <p style="font-size: 20px; color: white; margin-bottom: 10px;"><span id="lbl_final_score">SKOR</span>: <span
+                id="finalScore" style="color: yellow;">0</span></p>
+        <p style="font-size: 12px; color: gold;" id="newRecordMsg">✨ YENİ REKOR! ✨</p>
+        <button id="btn_menu" class="main-btn btn-restart" onclick="window.showMenu()">MENÜYE DÖN</button>
+    </div>
+
+    <!-- PAUSE -->
+    <div id="pauseMenu" class="overlay">
+        <h1 id="paused">DURAKLATILDI</h1>
+        <button id="btn_resume" class="main-btn btn-restart" onclick="window.togglePause()">DEVAM ET</button>
+        <button id="btn_exit" class="main-btn btn-hard" onclick="window.showMenu()"
+            style="margin-top: 10px;">ÇIKIŞ</button>
+    </div>
+
+    <div id="controls-hint">PC: ⬅➡ + SPACE (BASILI TUT) | MOBİL: DOKUN (YÖN) + EKRANA BAS (GÜÇ)</div>
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        window.onload = function () {
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+
+            // --- ÇEVİRİ SİSTEMİ ---
+            const TRANSLATIONS = {
+                tr: {
+                    lbl_score: "SKOR", lbl_final_score: "SKOR",
+                    stamina_ready: "HAZIR", stamina_filling: "DOLUYOR",
+                    btn_easy: "KOLAY", btn_medium: "ORTA", btn_hard: "EKSTREM 🔥", btn_shop: "MAĞAZA 🛒",
+                    shop_title: "MAĞAZA", shop_balance: "BAKİYE", btn_back: "GERİ DÖN",
+                    game_over: "OYUN BİTTİ!", new_record: "✨ YENİ REKOR! ✨", btn_menu: "MENÜYE DÖN",
+                    paused: "DURAKLATILDI", btn_resume: "DEVAM ET", btn_exit: "ÇIKIŞ",
+                    controls_hint: "PC: ⬅➡ + SPACE (BASILI TUT) | MOBİL: DOKUN (YÖN) + EKRANA BAS (GÜÇ)",
+                    death_void: "BOŞLUĞA DÜŞTÜN",
+                    shop_equip: "SEÇ", shop_equipped: "SEÇİLİ"
+                },
+                en: {
+                    lbl_score: "SCORE", lbl_final_score: "SCORE",
+                    stamina_ready: "READY", stamina_filling: "CHARGING",
+                    btn_easy: "EASY", btn_medium: "MEDIUM", btn_hard: "EXTREME 🔥", btn_shop: "SHOP 🛒",
+                    shop_title: "SHOP", shop_balance: "BALANCE", btn_back: "BACK",
+                    game_over: "GAME OVER!", new_record: "✨ NEW RECORD! ✨", btn_menu: "MAIN MENU",
+                    paused: "PAUSED", btn_resume: "RESUME", btn_exit: "EXIT",
+                    controls_hint: "PC: ⬅➡ + SPACE (HOLD) | MOBILE: TAP (DIR) + PRESS (POWER)",
+                    death_void: "FELL INTO VOID",
+                    shop_equip: "EQUIP", shop_equipped: "EQUIPPED"
+                },
+                es: {
+                    lbl_score: "PUNTOS", lbl_final_score: "PUNTOS",
+                    stamina_ready: "LISTO", stamina_filling: "CARGANDO",
+                    btn_easy: "FÁCIL", btn_medium: "MEDIO", btn_hard: "EXTREMO 🔥", btn_shop: "TIENDA 🛒",
+                    shop_title: "TIENDA", shop_balance: "SALDO", btn_back: "VOLVER",
+                    game_over: "¡JUEGO TERMINADO!", new_record: "✨ ¡NUEVO RÉCORD! ✨", btn_menu: "MENÚ PRINCIPAL",
+                    paused: "PAUSADO", btn_resume: "REANUDAR", btn_exit: "SALIR",
+                    controls_hint: "PC: ⬅➡ + ESPACIO (MANTENER) | MÓVIL: TOQUE (DIR) + PRESIÓN (PODER)",
+                    death_void: "CAÍSTE AL VACÍO",
+                    shop_equip: "EQUIPAR", shop_equipped: "EQUIPADO"
+                },
+                zh: {
+                    lbl_score: "分数", lbl_final_score: "分数",
+                    stamina_ready: "准备", stamina_filling: "充能中",
+                    btn_easy: "简单", btn_medium: "中等", btn_hard: "极限 🔥", btn_shop: "商店 🛒",
+                    shop_title: "商店", shop_balance: "余额", btn_back: "返回",
+                    game_over: "游戏结束!", new_record: "✨ 新纪录! ✨", btn_menu: "主菜单",
+                    paused: "已暂停", btn_resume: "继续", btn_exit: "退出",
+                    controls_hint: "PC: ⬅➡ + 空格 (按住) | 手机: 点击 (方向) + 按压 (力量)",
+                    death_void: "掉入虚空",
+                    shop_equip: "装备", shop_equipped: "已装备"
+                },
+                hi: {
+                    lbl_score: "स्कोर", lbl_final_score: "स्कोर",
+                    stamina_ready: "तैयार", stamina_filling: "भर रहा है",
+                    btn_easy: "आसान", btn_medium: "मध्यम", btn_hard: "चरम 🔥", btn_shop: "दुकान 🛒",
+                    shop_title: "दुकान", shop_balance: "शेष", btn_back: "वापस",
+                    game_over: "खेल खत्म!", new_record: "✨ नया रिकॉर्ड! ✨", btn_menu: "मुख्य मेनू",
+                    paused: "रुका हुआ", btn_resume: "जारी रखें", btn_exit: "बाहर जाएं",
+                    controls_hint: "PC: ⬅➡ + स्पेस (पकड़ें) | मोबाइल: टैप (दिशा) + दबाएं (शक्ति)",
+                    death_void: "शून्य में गिर गया",
+                    shop_equip: "चुनें", shop_equipped: "सुसज्जित"
+                }
+            };
+
+            let currentLang = localStorage.getItem('froggy_lang') || 'tr';
+
+            window.setLanguage = function (lang) {
+                if (!TRANSLATIONS[lang]) return;
+                currentLang = lang;
+                localStorage.setItem('froggy_lang', lang);
+
+                const t = TRANSLATIONS[lang];
+
+                // UI Güncelleme
+                const ids = ['lbl_score', 'lbl_final_score', 'stamina-text', 'btn_easy', 'btn_medium', 'btn_hard', 'btn_shop',
+                    'shop_title', 'shop_balance', 'btn_back', 'game_over', 'new_recordMsg', 'btn_menu',
+                    'paused', 'btn_resume', 'btn_exit', 'controls-hint'];
+
+                ids.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        // Özel durumlar
+                        if (id === 'new_recordMsg') el.innerText = t.new_record;
+                        else if (id === 'stamina-text') { /* Dinamik güncelleniyor, updateStaminaUI halleder */ }
+                        else el.innerText = t[id.replace(/-/g, '_')] || t[id] || el.innerText;
+                    }
+                });
+
+                // Mağaza açıksa güncelle
+                if (document.getElementById('shopMenu').style.display === 'flex') renderShop();
+            };
+
+            // --- AYARLAR ---
+            let soundEnabled = true;
+            let gamePaused = false;
+            let shakeIntensity = 0;
+
+            // --- SES SİSTEMİ (ULTRA SOFT & MINIMALIST) ---
+            const SoundManager = {
+                ctx: null,
+                init: function () {
+                    window.AudioContext = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioContext();
+                },
+                playTone: function (freq, type, duration, vol = 0.05, slideTo = null) {
+                    if (!soundEnabled || !this.ctx) return;
+                    if (this.ctx.state === 'suspended') this.ctx.resume();
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                    if (slideTo) {
+                        osc.frequency.exponentialRampToValueAtTime(slideTo, this.ctx.currentTime + duration);
+                    }
+                    gain.gain.setValueAtTime(0, this.ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(vol, this.ctx.currentTime + 0.02);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + duration);
+                },
+                playJump: function () { this.playTone(150, 'sine', 0.15, 0.04, 200); },
+                playLand: function () { this.playTone(80, 'sine', 0.1, 0.02); },
+                playCollect: function () { this.playTone(523.25, 'sine', 0.1, 0.03); },
+                playCombo: function () {
+                    this.playTone(523.25, 'sine', 0.15, 0.03);
+                    setTimeout(() => this.playTone(659.25, 'sine', 0.15, 0.03), 50);
+                },
+                playDie: function () { this.playTone(150, 'triangle', 0.4, 0.03, 50); },
+                playBreak: function () { this.playTone(180, 'sine', 0.25, 0.08, 30); } // Sweet Bomb Effect
+            };
+
+            // --- OYUN DEĞİŞKENLERİ ---
+            let gameRunning = false;
+            let score = 0;
+            let totalCoins = parseInt(localStorage.getItem('froggy_coins')) || 0;
+            let comboCount = 0;
+            let comboTimer = 0;
+
+            const DIFFICULTY = {
+                easy: { gravity: 0.35, jumpPower: -12.5, platformW: 140, gap: 90, speed: 4 },
+                medium: { gravity: 0.45, jumpPower: -13.5, platformW: 120, gap: 100, speed: 4.5 },
+                hard: { gravity: 0.52, jumpPower: -14.5, platformW: 100, gap: 105, speed: 5.5 }
+            };
+            let currentSettings = DIFFICULTY.medium;
+
+            const frog = { x: 0, y: 0, w: 32, h: 32, dx: 0, dy: 0, scaleX: 1, scaleY: 1, grounded: false, platform: null };
+            let platforms = []; let flies = []; let particles = []; let stars = [];
+            let inputX = 0; let touchStartTime = 0; let isInputActive = false; let staminaReady = true; let staminaTimer = 0;
+
+            const SKINS = [
+                { id: 'default', name: 'KLASİK', cost: 0, color: '#4CAF50' },
+                { id: 'red', name: 'KIRMIZI', cost: 50, color: '#F44336' },
+                { id: 'blue', name: 'MAVİ', cost: 100, color: '#2196F3' },
+                { id: 'ninja', name: 'NİNJA', cost: 250, color: '#333' },
+                { id: 'gold', name: 'ALTIN', cost: 500, color: '#FFD700' }
+            ];
+            let ownedSkins = JSON.parse(localStorage.getItem('froggy_skins')) || ['default'];
+            let equippedSkinId = localStorage.getItem('froggy_equipped') || 'default';
+
+            function init() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                generateStars();
+                SoundManager.init();
+                document.getElementById('coinDisplay').innerText = totalCoins;
+                document.getElementById('shopCoins').innerText = totalCoins;
+                window.setLanguage(currentLang);
+            }
+
+            window.startGame = function (diff) {
+                currentSettings = DIFFICULTY[diff];
+                gameRunning = true; gamePaused = false; score = 0; comboCount = 0;
+                frog.x = canvas.width / 2 - 16; frog.y = canvas.height - 150; frog.dx = 0; frog.dy = 0;
+                platforms = []; flies = []; particles = [];
+                platforms.push({ x: canvas.width / 2 - 60, y: canvas.height - 50, w: 120, type: 'normal' });
+                let cy = canvas.height - 150;
+                for (let i = 0; i < 12; i++) { generatePlatform(cy); cy -= currentSettings.gap; }
+                document.getElementById('gameMenu').style.display = 'none';
+                document.getElementById('gameOver').style.display = 'none';
+                document.getElementById('ui-layer').style.display = 'block';
+                if (SoundManager.ctx && SoundManager.ctx.state === 'suspended') SoundManager.ctx.resume();
+                loop();
+            };
+
+            function generatePlatform(y) {
+                let w = currentSettings.platformW;
+                let x = Math.random() * (canvas.width - w);
+                let type = 'normal';
+                let rand = Math.random();
+                if (rand < 0.15) type = 'break'; else if (rand < 0.25) type = 'bounce';
+                let moving = Math.random() < 0.3;
+                let speed = moving ? (2 + Math.random()) : 0;
+                platforms.push({ x: x, y: y, w: w, type: type, moving: moving, speed: speed, dir: Math.random() < 0.5 ? 1 : -1, broken: false, breakTimer: 0 });
+                if (Math.random() < 0.3) flies.push({ x: x + w / 2 - 5, y: y - 25, taken: false, float: 0 });
+            }
+
+            function update() {
+                if (!gameRunning || gamePaused) return;
+                let targetSpeed = inputX * currentSettings.speed;
+                frog.dx += (targetSpeed - frog.dx) * 0.2; frog.x += frog.dx;
+
+                if (!frog.grounded) {
+                    frog.dy += currentSettings.gravity; frog.y += frog.dy;
+                    frog.scaleX = Math.max(0.8, 1 - Math.abs(frog.dy) * 0.01); frog.scaleY = Math.min(1.2, 1 + Math.abs(frog.dy) * 0.01);
+                } else {
+                    frog.scaleX += (1 - frog.scaleX) * 0.2; frog.scaleY += (1 - frog.scaleY) * 0.2;
+                }
+                if (frog.x < 0) frog.x = 0; if (frog.x + frog.w > canvas.width) frog.x = canvas.width - frog.w;
+
+                let wasGrounded = frog.grounded;
+                frog.grounded = false;
+                if (frog.dy >= 0) {
+                    platforms.forEach(p => {
+                        let tolerance = Math.max(20, frog.dy + 5);
+                        if (!p.broken && frog.x + frog.w * 0.8 > p.x && frog.x + frog.w * 0.2 < p.x + p.w && frog.y + frog.h >= p.y && frog.y + frog.h <= p.y + tolerance) {
+                            if (!frog.grounded) {
+                                frog.grounded = true; frog.dy = 0; frog.y = p.y - frog.h; frog.platform = p;
+                                if (!wasGrounded) {
+                                    frog.scaleX = 1.3; frog.scaleY = 0.7;
+                                    SoundManager.playLand();
+                                    createParticles(frog.x + frog.w / 2, frog.y + frog.h, 5, '#fff');
+                                }
+                                if (p.type === 'break') { p.breakTimer = Date.now(); }
+                                else if (p.type === 'bounce') {
+                                    frog.dy = -20; frog.grounded = false;
+                                    createParticles(frog.x + frog.w / 2, frog.y + frog.h, 10, '#E91E63');
+                                    SoundManager.playJump();
+                                }
+                            }
+                        }
+                    });
+                }
+
+                platforms.forEach(p => {
+                    if (p.moving) {
+                        p.x += p.speed * p.dir;
+                        if (p.x < 0 || p.x + p.w > canvas.width) p.dir *= -1;
+                        if (frog.grounded && frog.platform === p) frog.x += p.speed * p.dir;
+                    }
+                    if (p.type === 'break' && p.breakTimer > 0 && !p.broken) {
+                        if (Date.now() - p.breakTimer > 1000) {
+                            p.broken = true; createParticles(p.x + p.w / 2, p.y, 15, '#aaa'); SoundManager.playBreak();
+                        }
+                    }
+                });
+
+                flies.forEach(f => {
+                    if (!f.taken && frog.x < f.x + 10 && frog.x + frog.w > f.x && frog.y < f.y + 10 && frog.y + frog.h > f.y) {
+                        f.taken = true; comboCount++; comboTimer = Date.now();
+                        score += 50 * comboCount; totalCoins++;
+                        createParticles(f.x, f.y, 10, '#FFD700'); SoundManager.playCollect();
+                        if (comboCount > 1) { showComboText(comboCount); SoundManager.playCombo(); }
+                        staminaReady = true; updateStaminaUI();
+                    }
+                });
+                if (Date.now() - comboTimer > 2500) comboCount = 0;
+
+                if (frog.y < canvas.height / 2.5) {
+                    let diff = (canvas.height / 2.5) - frog.y;
+                    frog.y += diff; platforms.forEach(p => p.y += diff); flies.forEach(f => f.y += diff); stars.forEach(s => s.y += diff * s.speed);
+                    score += Math.floor(diff / 2);
+                    platforms = platforms.filter(p => p.y < canvas.height); flies = flies.filter(f => f.y < canvas.height);
+                    let highestY = platforms.length > 0 ? Math.min(...platforms.map(p => p.y)) : canvas.height;
+                    if (highestY > 100) generatePlatform(highestY - currentSettings.gap);
+                }
+                if (frog.y > canvas.height) endGame(TRANSLATIONS[currentLang].death_void);
+
+                document.getElementById('scoreDisplay').innerText = score;
+                document.getElementById('coinDisplay').innerText = totalCoins;
+                if (shakeIntensity > 0) shakeIntensity *= 0.9; if (shakeIntensity < 0.5) shakeIntensity = 0;
+            }
+
+            function draw() {
+                ctx.save();
+                if (shakeIntensity > 0) { ctx.translate((Math.random() - 0.5) * shakeIntensity, (Math.random() - 0.5) * shakeIntensity); }
+                let grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+                grad.addColorStop(0, "#000022"); grad.addColorStop(1, "#110033");
+                ctx.fillStyle = grad; ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.fillStyle = "white";
+                stars.forEach(s => { if (s.y > canvas.height) s.y = 0; ctx.globalAlpha = s.opacity; ctx.fillRect(s.x, s.y, s.size, s.size); });
+                ctx.globalAlpha = 1;
+
+                platforms.forEach(p => {
+                    if (p.broken) return;
+                    if (p.type === 'break') ctx.fillStyle = '#795548'; else if (p.type === 'bounce') ctx.fillStyle = '#E91E63'; else ctx.fillStyle = '#4CAF50';
+                    let px = p.x; if (p.type === 'break' && p.breakTimer > 0) { px += (Math.random() - 0.5) * 4; ctx.fillStyle = '#5D4037'; }
+                    ctx.fillRect(px, p.y, p.w, 20); ctx.fillStyle = 'rgba(255,255,255,0.3)'; ctx.fillRect(px, p.y, p.w, 4);
+                });
+
+                flies.forEach(f => {
+                    if (f.taken) return;
+                    f.float += 0.1; let fy = f.y + Math.sin(f.float) * 3;
+                    ctx.fillStyle = '#FFD700'; ctx.beginPath(); ctx.arc(f.x, fy, 6, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = '#FFF'; ctx.fillRect(f.x - 8, fy - 2, 6, 4); ctx.fillRect(f.x + 2, fy - 2, 6, 4);
+                });
+
+                let skinColor = SKINS.find(s => s.id === equippedSkinId)?.color || '#4CAF50';
+                ctx.fillStyle = skinColor;
+                let fw = frog.w * frog.scaleX; let fh = frog.h * frog.scaleY;
+                let fx = frog.x + (frog.w - fw) / 2; let fy = frog.y + (frog.h - fh);
+                ctx.fillRect(fx, fy, fw, fh);
+                ctx.fillStyle = 'white'; ctx.fillRect(fx + 4 * frog.scaleX, fy + 4 * frog.scaleY, 8 * frog.scaleX, 8 * frog.scaleY); ctx.fillRect(fx + 20 * frog.scaleX, fy + 4 * frog.scaleY, 8 * frog.scaleX, 8 * frog.scaleY);
+                ctx.fillStyle = 'black'; ctx.fillRect(fx + 6 * frog.scaleX, fy + 6 * frog.scaleY, 4 * frog.scaleX, 4 * frog.scaleY); ctx.fillRect(fx + 22 * frog.scaleX, fy + 6 * frog.scaleY, 4 * frog.scaleX, 4 * frog.scaleY);
+
+                particles.forEach((p, i) => {
+                    p.x += p.vx; p.y += p.vy; p.life -= 0.05;
+                    if (p.life <= 0) particles.splice(i, 1);
+                    else { ctx.globalAlpha = p.life; ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, p.size, p.size); }
+                });
+                ctx.globalAlpha = 1;
+                ctx.restore();
+                if (gameRunning) requestAnimationFrame(loop);
+            }
+
+            function loop() { update(); draw(); }
+
+            function createParticles(x, y, count, color) {
+                for (let i = 0; i < count; i++) { particles.push({ x: x, y: y, vx: (Math.random() - 0.5) * 6, vy: (Math.random() - 0.5) * 6, life: 1.0, color: color, size: Math.random() * 4 + 2 }); }
+            }
+            function generateStars() {
+                stars = []; for (let i = 0; i < 80; i++) { stars.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, size: Math.random() * 2 + 1, opacity: Math.random(), speed: Math.random() * 0.5 + 0.1 }); }
+            }
+            function showComboText(count) {
+                const el = document.getElementById('combo-display'); el.innerText = `x${count} KOMBO!`;
+                el.style.opacity = 1; el.style.transform = 'rotate(-10deg) scale(1.5)';
+                setTimeout(() => { el.style.opacity = 0; el.style.transform = 'rotate(-10deg) scale(1)'; }, 1000);
+            }
+            function endGame(reason) {
+                gameRunning = false; shakeIntensity = 20; SoundManager.playDie();
+                document.getElementById('gameOver').style.display = 'flex';
+                document.getElementById('deathReason').innerText = reason;
+                document.getElementById('finalScore').innerText = score;
+                localStorage.setItem('froggy_coins', totalCoins);
+                let best = parseInt(localStorage.getItem('froggy_best_' + currentSettings.speed)) || 0;
+                if (score > best) { localStorage.setItem('froggy_best_' + currentSettings.speed, score); document.getElementById('newRecordMsg').style.display = 'block'; }
+                else { document.getElementById('newRecordMsg').style.display = 'none'; }
+            }
+
+            window.togglePause = function () { gamePaused = !gamePaused; document.getElementById('pauseMenu').style.display = gamePaused ? 'flex' : 'none'; };
+            window.toggleSound = function () { soundEnabled = !soundEnabled; document.getElementById('btn_sound').innerText = soundEnabled ? '🔊' : '🔇'; };
+
+            window.addEventListener('touchstart', e => { if (e.target.closest('button')) return; if (!gameRunning) return; e.preventDefault(); inputX = e.touches[0].clientX < canvas.width / 2 ? -1 : 1; startJump(); }, { passive: false });
+            window.addEventListener('touchend', () => { inputX = 0; endJump(); });
+            window.addEventListener('mousedown', e => { if (e.target.closest('button')) return; if (!gameRunning) return; startJump(); });
+            window.addEventListener('mouseup', endJump);
+            window.addEventListener('keydown', e => { if (e.code === 'ArrowLeft') inputX = -1; if (e.code === 'ArrowRight') inputX = 1; if (e.code === 'Space') startJump(); });
+            window.addEventListener('keyup', e => { if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') inputX = 0; if (e.code === 'Space') endJump(); });
+            window.addEventListener('blur', () => { inputX = 0; isInputActive = false; });
+
+            function startJump() { if (!gameRunning || !frog.grounded) return; touchStartTime = Date.now(); isInputActive = true; frog.scaleY = 0.6; frog.scaleX = 1.4; }
+            function endJump() {
+                if (!gameRunning || !isInputActive) return; isInputActive = false;
+                let duration = Date.now() - touchStartTime; let power = currentSettings.jumpPower;
+                if (staminaReady && duration > 300) { power *= 1.5; staminaReady = false; staminaTimer = Date.now(); updateStaminaUI(); createParticles(frog.x + 16, frog.y + 32, 20, '#00FFFF'); }
+                frog.dy = power; frog.grounded = false; SoundManager.playJump(); frog.scaleX = 0.7; frog.scaleY = 1.3;
+            }
+
+            function updateStaminaUI() {
+                const bar = document.getElementById('stamina-bar'); const txt = document.getElementById('stamina-text');
+                const t = TRANSLATIONS[currentLang];
+                if (staminaReady) { bar.style.width = '100%'; bar.style.backgroundColor = '#00FF00'; txt.innerText = t.stamina_ready; }
+                else {
+                    let passed = Date.now() - staminaTimer;
+                    if (passed > 5000) { staminaReady = true; updateStaminaUI(); return; }
+                    let pct = (passed / 5000) * 100; bar.style.width = pct + '%'; bar.style.backgroundColor = '#FF00FF'; txt.innerText = t.stamina_filling;
+                    setTimeout(updateStaminaUI, 100);
+                }
+            }
+
+            window.openShop = function () { document.getElementById('gameMenu').style.display = 'none'; document.getElementById('shopMenu').style.display = 'flex'; renderShop(); };
+            window.closeShop = function () { document.getElementById('shopMenu').style.display = 'none'; document.getElementById('gameMenu').style.display = 'flex'; };
+
+            function renderShop() {
+                const list = document.getElementById('shopList'); list.innerHTML = '';
+                const t = TRANSLATIONS[currentLang];
+                SKINS.forEach(skin => {
+                    const div = document.createElement('div'); div.className = 'shop-item';
+                    const owned = ownedSkins.includes(skin.id); const equipped = equippedSkinId === skin.id;
+                    let btn = '';
+                    if (equipped) btn = `<button class="icon-btn" style="background:#4CAF50; width:80px; font-size:10px;">${t.shop_equipped}</button>`;
+                    else if (owned) btn = `<button class="icon-btn" style="background:#2196F3; width:80px; font-size:10px;" onclick="window.equip('${skin.id}')">${t.shop_equip}</button>`;
+                    else btn = `<button class="icon-btn" style="background:#FFC107; color:black; width:80px; font-size:10px;" onclick="window.buy('${skin.id}')">${skin.cost}</button>`;
+                    div.innerHTML = `<div style="display:flex; align-items:center; gap:10px;"><div class="shop-preview" style="background:${skin.color}"></div><span style="font-size:10px;">${skin.name}</span></div>${btn}`;
+                    list.appendChild(div);
+                });
+            }
+            window.buy = function (id) {
+                let skin = SKINS.find(s => s.id === id);
+                if (totalCoins >= skin.cost) {
+                    totalCoins -= skin.cost; ownedSkins.push(id);
+                    localStorage.setItem('froggy_coins', totalCoins); localStorage.setItem('froggy_skins', JSON.stringify(ownedSkins));
+                    document.getElementById('shopCoins').innerText = totalCoins; SoundManager.playCollect(); renderShop();
+                }
+            };
+            window.equip = function (id) { equippedSkinId = id; localStorage.setItem('froggy_equipped', id); renderShop(); };
+            window.showMenu = function () { document.getElementById('gameOver').style.display = 'none'; document.getElementById('pauseMenu').style.display = 'none'; document.getElementById('gameMenu').style.display = 'flex'; };
+
+            init();
+            window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
+        };
+    </script>
+</body>
+
+</html>
